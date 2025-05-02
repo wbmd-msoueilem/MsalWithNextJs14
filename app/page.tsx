@@ -10,6 +10,7 @@ export default function Home() {
       <div className="flex flex-col gap-2 text-sm max-w-xs mx-auto my-10 uppercase">
         <Link href="/adminonlypage" className="fancybtn">Test admin only page</Link>
         <Link href="/gettokentest" className="fancybtn">Get Token Test Page Example</Link>
+        <Link href="/adventureworks" className="fancybtn">View AdventureWorks Data</Link>
       </div>
       <div className="flex flex-col gap-2 max-w-xs mx-auto my-10">
         <h1>Only Admins can see the below message</h1>
