@@ -1,69 +1,97 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from "react";
-import { queryAdventureWorks } from "@/msal/query";
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from "chart.js";
-import { Bar } from "react-chartjs-2";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+import React, { useState, useEffect } from 'react';
+import { queryAdventureWorks } from '@/msal/query';
+import UserAvatar from '@/components/UserAvatar';
+import { useMsal } from '@azure/msal-react';
+import { InteractionStatus } from "@azure/msal-browser";
 
-export default function AdventureWorksPage() {
-    const [chartData, setChartData] = useState<any>(null);
+
+function AdventureWorksPage() {
+    const [salesData, setSalesData] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const { inProgress } = useMsal();
+
 
     useEffect(() => {
         async function fetchData() {
+            setLoading(true);
+            setError(null);
             try {
-                const { labels, data } = await queryAdventureWorks();
-                setChartData({
-                    labels,
-                    datasets: [
-                        {
-                            label: "Internet Sales Amount",
-                            data,
-                            backgroundColor: "rgba(75, 192, 192, 0.2)",
-                            borderColor: "rgba(75, 192, 192, 1)",
-                            borderWidth: 1,
-                        },
-                    ],
-                });
+                const data = await queryAdventureWorks();
+                setSalesData(data);
             } catch (err: any) {
-                console.error("Error fetching data:", err);
-                setError(err.message || "An error occurred");
+                setError(err.message || 'Failed to fetch AdventureWorks data');
+            } finally {
+                setLoading(false);
             }
         }
 
-        fetchData();
-    }, []);
 
+        if (inProgress === InteractionStatus.None) {
+            fetchData();
+        }
+    }, [inProgress]);
+
+
+    if (loading) {
+        return <div className="flex justify-center items-center h-screen">Loading...</div>;
+    }
     if (error) {
-        return <div className="text-red-500">Error: {error}</div>;
+        return (
+            <div className="flex justify-center items-center h-screen text-red-500">
+                Error: {error}
+            </div>
+        );
     }
 
-    if (!chartData) {
-        return <div>Loading...</div>;
-    }
 
     return (
-        <div className="p-10">
-            <h1 className="text-xl font-bold mb-4">AdventureWorks Sales Data</h1>
-            <div className="w-full max-w-2xl mx-auto">
-                <Bar
-                    data={chartData}
-                    options={{
-                        responsive: true,
-                        plugins: {
-                            legend: {
-                                position: "top",
-                            },
-                            title: {
-                                display: true,
-                                text: "Internet Sales Amount by Year",
-                            },
-                        },
-                    }}
-                />
-            </div>
+        <div className="p-4">
+            <h1 className="text-2xl font-bold mb-4">AdventureWorks Sales Data</h1>
+            <UserAvatar showUserInfo />
+            {salesData.length > 0 ? (
+                <div className="overflow-x-auto">
+                    <table className="min-w-full leading-normal shadow-md rounded-lg overflow-hidden border border-gray-200">
+                        <thead className="bg-gray-100 text-gray-700">
+                            <tr>
+                                {Object.keys(salesData[0]).map((key) => (
+                                    <th
+                                        key={key}
+                                        className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold uppercase tracking-wider"
+                                    >
+                                        {key}
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white">
+                            {salesData.map((row, index) => (
+                                <tr key={index}>
+                                    {Object.values(row).map((value, i) => {
+                                        const key = Object.keys(salesData[0])[i];
+                                        return (
+                                            <td
+                                                key={`${index}-${key}`}
+                                                className="px-5 py-5 border-b border-gray-200 text-sm"
+                                            >
+                                                {typeof value === 'number' ? value.toFixed(2) : value}
+                                            </td>
+                                        )
+                                    })}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            ) : (
+                <div className="text-gray-500">No sales data available.</div>
+            )}
         </div>
     );
 }
+
+
+export default AdventureWorksPage;
